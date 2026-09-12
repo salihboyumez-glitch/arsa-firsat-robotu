@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Örnek ilan kaynağı",
+    "category": "portal",
+    "url": "https://example.com/arsa-ilanlari",
+    "item": ".listing",
+    "title": ".title",
+    "price": ".price",
+    "area": ".area",
+    "location": ".location",
+    "link": "a"
+  }
+]
+
