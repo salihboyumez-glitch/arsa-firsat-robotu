@@ -34,14 +34,29 @@ def scan_source(source):
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
     rows = []
-    for node in soup.select(source["item"]):
+    nodes = soup.select(source.get("item", "")) if source.get("item") else []
+    if not nodes:
+        nodes = [a.parent for a in soup.select("a[href]") if any(
+            word in a.parent.get_text(" ", strip=True).casefold()
+            for word in ("arsa", "tarla", "arazi", "bahçe")
+        )]
+    for node in nodes:
         def text(selector):
             found = node.select_one(source.get(selector, ""))
             return found.get_text(" ", strip=True) if found else ""
-        title, location = text("title"), text("location")
+        title = text("title") or node.get_text(" ", strip=True)[:160]
+        location = text("location") or node.get_text(" ", strip=True)
         if not any(city in location.casefold() for city in CITIES):
             continue
-        price, area = number(text("price")), number(text("area"))
+        raw = node.get_text(" ", strip=True)
+        price = number(text("price"))
+        area = number(text("area"))
+        if not price:
+            match = re.search(r"([\d.]+(?:,\d+)?)\s*(?:TL|₺)", raw, re.I)
+            price = number(match.group(1)) if match else 0
+        if not area:
+            match = re.search(r"([\d.]+(?:,\d+)?)\s*(?:m²|m2)", raw, re.I)
+            area = number(match.group(1)) if match else 0
         link_node = node.select_one(source.get("link", "a"))
         link = urljoin(source["url"], link_node.get("href", "")) if link_node else source["url"]
         listing_id = hashlib.sha256(f"{source['name']}|{link}".encode()).hexdigest()[:20]
@@ -109,4 +124,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
